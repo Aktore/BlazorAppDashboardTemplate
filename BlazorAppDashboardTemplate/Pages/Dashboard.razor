@@ -1,0 +1,119 @@
+﻿@page "/dashboard"
+@using BlazorAppDashboardTemplate.Models
+@using BlazorAppDashboardTemplate.Services
+@inject DashboardService DashboardService
+@inject IJSRuntime JS
+
+<h3 class="mb-4">KPI Dashboard</h3>
+
+<div class="container-fluid">
+    <!-- Project Selector -->
+    <div class="col-12 mb-3">
+        <label for="projectSelector" class="form-label">Select Project</label>
+        <select id="projectSelector" class="form-select" @onchange="OnProjectChanged">
+            <option value="-1">-- Select a Project --</option>
+            @foreach (var project in projects)
+            {
+                <option value="@project.ProjectId">@project.ProjectName</option>
+            }
+        </select>
+    </div>
+    <div class="row g-4">
+        <!-- Bar Chart -->
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card p-3" style="height:400px;">
+                <canvas id="barChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Pie Chart -->
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card p-3" style="height:400px;">
+                <canvas id="pieChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Timeline Chart -->
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card p-3" style="height:400px;">
+                <canvas id="timelineChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Project> projects = new();
+    private List<ProjectTask> tasks = new();
+    private Project selectedProject = new Project();
+    private int selectedProjectId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        projects = await DashboardService.GetProjectsAsync();
+        if (projects.Any())
+        {
+            selectedProjectId = projects.First().ProjectId;
+            tasks = await DashboardService.GetTasksByProjectAsync(selectedProjectId);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        // Егер жобалар жоқ болса немесе жоба таңдалмаған болса, chart салынбайды
+        if (projects == null || !projects.Any() || selectedProjectId <= 0)
+            return;
+
+        // BAR CHART
+        var labelsBar = projects.Select(p => p.ProjectName).ToArray();
+        var valuesBar = projects.Select(p => p.CompletionPercent).ToArray();
+        await JS.InvokeVoidAsync("renderBarChart", "barChart", labelsBar, valuesBar, "Project Completion %");
+
+        // PIE CHART
+        var labelsPie = tasks.Select(t => t.TaskName).ToArray();
+        var valuesPie = tasks.Select(t => t.ProgressPercent).ToArray();
+        await JS.InvokeVoidAsync("renderPieChart", "pieChart", labelsPie, valuesPie, "Project Status Distribution");
+
+
+        // TIMELINE CHART
+        var labelsTimeline = tasks.Select(t => t.StartDate.ToString("MMM dd")).ToArray();
+        var valuesTimeline = tasks.Select(t => t.ProgressPercent).ToArray();
+        await JS.InvokeVoidAsync("renderTimelineChart", "timelineChart", labelsTimeline, valuesTimeline, "Project Progress");
+    }
+
+    private async Task OnProjectChanged(ChangeEventArgs e)
+    {
+        var valueString = e.Value?.ToString();
+        if (string.IsNullOrWhiteSpace(valueString))
+            return;
+
+        selectedProjectId = int.Parse(valueString);
+
+        if (selectedProjectId <= 0)
+            return;
+
+        tasks = await DashboardService.GetTasksByProjectAsync(selectedProjectId);
+
+        StateHasChanged();
+
+        // JS charts redraw
+        await JS.InvokeVoidAsync("renderPieChart", "pieChart",
+            tasks.Select(t => t.TaskName).ToArray(),
+            tasks.Select(t => t.ProgressPercent).ToArray(),
+            "Project Status Distribution"
+        );
+
+        await JS.InvokeVoidAsync("renderTimelineChart", "timelineChart",
+            tasks.Select(t => t.StartDate.ToString("MMM dd")).ToArray(),
+            tasks.Select(t => t.ProgressPercent).ToArray(),
+            "Project Progress"
+        );
+
+        // TIMELINE CHART
+        var labelsTimeline = tasks.Select(t => t.StartDate.ToString("MMM dd")).ToArray();
+        var valuesTimeline = tasks.Select(t => t.ProgressPercent).ToArray();
+        await JS.InvokeVoidAsync("renderTimelineChart", "timelineChart", labelsTimeline, valuesTimeline, "Project Progress");
+    }
+}
