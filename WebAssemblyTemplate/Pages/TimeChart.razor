@@ -1,0 +1,46 @@
+﻿@page "/time-chart"
+@inject IJSRuntime JS
+
+<div class="container mt-4">
+    <div class="row">
+        <!-- Doughnut Chart -->
+        <div class="col-md-6">
+            <div class="card p-3 mb-3">
+                <h5 class="card-title text-center">Doughnut Chart</h5>
+                <button class="btn btn-sm btn-primary mb-2" @onclick="RandomizeData">Randomize</button>
+                <canvas id="doughnutChart" width="400" height="400"></canvas>
+            </div>
+        </div>
+
+        <!-- Time Scale Chart -->
+        <div class="col-md-6">
+            <div class="card p-3 mb-3">
+                <h5 class="card-title text-center">Time Scale Chart</h5>
+                <canvas id="timeChart" width="500" height="400"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("timeChartInterop.initChart");
+            await JS.InvokeVoidAsync("doughnutChartInterop.initChart");
+        }
+    }
+
+    private async Task RandomizeData()
+    {
+        await JS.InvokeVoidAsync("timeChartInterop.randomizeChart");
+
+        var randomData = new int[] {
+            new Random().Next(50, 400),
+            new Random().Next(50, 400),
+            new Random().Next(50, 400)
+        };
+        await JS.InvokeVoidAsync("doughnutChartInterop.updateData", randomData);
+    }
+}
