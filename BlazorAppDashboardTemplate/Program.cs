@@ -2,7 +2,6 @@ using BlazorAppDashboardTemplate.Data;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.EntityFrameworkCore;
-using BlazorAppDashboardTemplate.Services;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.SqlServer;
 using System.Text.Json;
@@ -12,9 +11,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
-builder.Services.AddSingleton<WeatherForecastService>();
+builder.Services.AddScoped<ProcessRepository>();
 
-builder.Services.AddScoped<DashboardService>();
 
 // Add DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>

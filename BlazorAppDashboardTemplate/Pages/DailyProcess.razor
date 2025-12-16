@@ -1,0 +1,78 @@
+﻿@page "/admin/process-types"
+@inject AppDbContext Db
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@using BlazorAppDashboardTemplate.Data
+@using BlazorAppDashboardTemplate.Models
+
+<h3>Create New Process Type</h3>
+
+<EditForm Model="@processType" OnValidSubmit="SaveAsync">
+    <div class="mb-2">
+        <label>Name</label>
+        <InputText @bind-Value="processType.Name" class="form-control" />
+    </div>
+    <div class="mb-2">
+        <label>Description</label>
+        <InputTextArea @bind-Value="processType.Description" class="form-control" />
+    </div>
+
+    <h4>Fields</h4>
+    @foreach (var field in fields)
+    {
+        <div class="border p-2 mb-2">
+            <InputText @bind-Value="field.Name" placeholder="Field Name" class="form-control mb-1" />
+            <select @bind="field.Type" class="form-control mb-1">
+                <option value="String">String</option>
+                <option value="Decimal">Decimal</option>
+                <option value="DateTime">DateTime</option>
+                <option value="Boolean">Boolean</option>
+            </select>
+            <label>
+                <input type="checkbox" @bind="field.Required" /> Required
+            </label>
+            <button type="button" class="btn btn-danger btn-sm mt-1" @onclick="() => RemoveField(field)">Remove</button>
+        </div>
+    }
+    <button type="button" class="btn btn-secondary mb-2" @onclick="AddField">Add Field</button>
+
+    <h5>Generated JSON</h5>
+    <pre>@fieldsJson</pre>
+
+    <button type="submit" class="btn btn-primary">Save Process Type</button>
+</EditForm>
+
+@code {
+    private ProcessType processType = new();
+    private List<FieldMeta> fields = new();
+    private string fieldsJson => JsonSerializer.Serialize(fields, new JsonSerializerOptions { WriteIndented = true });
+
+    private void AddField()
+    {
+        fields.Add(new FieldMeta());
+    }
+
+    private void RemoveField(FieldMeta field)
+    {
+        fields.Remove(field);
+    }
+
+    private async Task SaveAsync()
+    {
+        processType.FieldsJson = fieldsJson;
+        Db.ProcessTypes.Add(processType);
+        try
+        {
+            await Db.SaveChangesAsync();
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine(ex.Message.ToString());
+        }
+
+
+        // Reset form
+        processType = new ProcessType();
+        fields.Clear();
+    }
+}

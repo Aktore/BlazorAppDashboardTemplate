@@ -59,8 +59,8 @@ window.editTableInterop = {
         // кестені құру
         window.editedTable = new Tabulator("#" + elementId, {
             height: "311px",  
+            rowHeader: { formatter: "rownum", headerSort: false, hozAlign: "center", resizable: false, frozen: true },
             responsiveLayout: "collapse",  // шағын экранда бағандарды жасыру
-            columnMinWidth: 60,            // минималды баған ені
             resizableColumns: true,        // қолданушы баған енін өзгерте алады
             data: data,
             layout: "fitColumns",          // бағандарды контейнерге тарату
